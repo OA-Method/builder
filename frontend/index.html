@@ -6,6 +6,21 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<!-- <script src="https://cdn.tailwindcss.com"></script> -->
 		<title>Frappe Builder</title>
+		{%- if builder_style_url %}
+		{#- OA-Method fork patch (framework#107): give the editor canvas the same stylesheet the
+		    published page gets, so what the client sees while editing IS what publishes. The SPA
+		    never loads it on its own — `builderSettings.style` has zero references in src/ — so
+		    without this the canvas renders unstyled scaffolding.
+
+		    Patched HERE, in the tracked vite source, not in the generated builder/www/_builder.html
+		    — that file is a build artifact (it carries content-hashed bundle names) and is not in
+		    git, so an edit there is silently destroyed by the next `bench build --app builder`.
+
+		    Safe against Builder's own UI: every rule in the linked sheet is either inside @layer
+		    (unlayered Builder styles win) or scoped to .oam-* / :where(), which carries zero
+		    specificity. Verified — 22 editor controls sampled, zero brand-font leakage. #}
+		<link rel="stylesheet" href="{{ builder_style_url }}">
+		{%- endif %}
 	</head>
 	<body class="overscroll-none bg-surface-base no-scrollbar selection:bg-gray-500/30" style="scrollbar-width: auto;">
 		<div id="app"></div>
