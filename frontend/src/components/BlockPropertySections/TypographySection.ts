@@ -25,7 +25,10 @@ const typographySectionProperties = [
 				controlType: "key",
 				// @ts-ignore
 				allowDynamicValue: true,
-				getModelValue: () => blockController.getText(),
+				// Must read through the same representation setModelValue writes (OA-Method framework#110).
+				// getText() strips markup, so the field both hid existing emphasis/breaks/links from the
+				// client and wrote the stripped string back as innerHTML on the next commit, destroying them.
+				getModelValue: () => blockController.getInnerHTML(),
 				setModelValue: (val: string) => {
 					blockController.setInnerHTML(val);
 				},

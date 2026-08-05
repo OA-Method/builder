@@ -202,7 +202,15 @@ const getInnerHTML = (editor: Editor | null) => {
 			editor.isActive("heading", { level: 3 })
 		)
 	) {
-		innerHTML = editor?.getText();
+		// A header block must not carry block-level boxes (<p>/<h*>) inside its own tag. Falling back
+		// to editor.getText() achieved that by destroying every <em>/<strong>/<a>/<br> the client had
+		// — and this path runs on merely OPENING the page, so it corrupted content nobody edited.
+		// Unwrap the block wrappers instead and keep the inline markup; a paragraph boundary becomes
+		// a line break rather than two words run together. framework#110.
+		innerHTML = innerHTML
+			.replace(/<\/p>\s*<p[^>]*>/gi, "<br>")
+			.replace(/<\/?p[^>]*>/gi, "")
+			.replace(/<\/?h[1-6][^>]*>/gi, "");
 	}
 	// a lone attribute-less <p> wrapper is redundant inside the block's own tag
 	// (and a block box inside inline elements like span/a breaks their layout)
