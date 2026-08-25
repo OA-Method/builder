@@ -8,12 +8,12 @@ import { getRGB, HexToHSV, HSVToHex } from "./colors";
 import {
 	addPxToNumber,
 	extractNumberAndUnit,
-	getBoxSpacing,
 	getNumberFromPx,
+	getSpacing,
 	normalizeValueWithUnits,
 	parseAndSetBackground,
 	removeDefaultUnit,
-	setBoxSpacing,
+	setSpacing,
 	shortenNumber,
 } from "./cssUtils";
 
@@ -888,6 +888,13 @@ function isDialogOpen() {
 	return !!document.querySelector("[role='dialog']");
 }
 
+function getPageUsageMessage(count: number) {
+	if (!count) {
+		return "not used in any pages";
+	}
+	return count === 1 ? "used in 1 page" : `used in ${count} pages`;
+}
+
 function parseJSONWithFallback<T>(value: T | string | undefined, fallback: T): T {
 	if (value === undefined || value === null || value === "") {
 		return fallback;
@@ -919,19 +926,20 @@ export {
 	getBlockInstance,
 	getBlockObjectCopy as getBlockObject,
 	getBlockString,
-	getBoxSpacing,
 	getCopyWithoutParent,
 	getDataArray,
 	getDataForKey,
 	getDefaultPropsList,
 	getImageBlock,
 	getNumberFromPx,
+	getPageUsageMessage,
 	getParentProps,
 	getPropValue,
 	getRepeaterScopedData,
 	getRGB,
 	getRootBlockTemplate,
 	getRouteVariables,
+	getSpacing,
 	getStandardPropValue,
 	extractComponentId,
 	getTextContent,
@@ -954,7 +962,7 @@ export {
 	parseAndSetBackground,
 	removeDefaultUnit,
 	replaceMapKey,
-	setBoxSpacing,
+	setSpacing,
 	shortenNumber,
 	showDialog,
 	stripStatePrefix,
