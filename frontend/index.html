@@ -6,6 +6,23 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<!-- <script src="https://cdn.tailwindcss.com"></script> -->
 		<title>Frappe Builder</title>
+		{#- OA-Method fork patch (framework#168): give the editor canvas the token VALUES.
+		    Patch #107 below links the site stylesheet, which is necessary but not sufficient:
+		    BuilderCanvas binds the tokens as inline styles on the canvas BLOCK, so at `:root`
+		    the `--<uuid>` properties do not exist. A custom property resolves where it is
+		    DECLARED, so a `:root { --H1_Hero_Font: var(--<uuid>) }` alias computes to
+		    guaranteed-invalid here and every token-driven class silently does nothing — while
+		    the published page, which gets these same variables at `:root`, renders correctly.
+		    templates/generators/webpage.html links the same route for the published path.
+
+		    Linked, not inlined: vite runs postcss over any inline style element in this file,
+		    and a Jinja expression is not valid CSS, so inlining fails the build. The route sets
+		    no_cache=1 (fork patch #2), so a link is never stale.
+
+		    Do NOT write a literal style/script tag name in this comment. Jinja comments are not
+		    HTML comments, so vite's parser reads it as a real unclosed tag and the build dies
+		    with `eof-in-element-that-can-contain-only-text`. #}
+		<link rel="stylesheet" href="/builder_assets/tokens.css">
 		{%- if builder_style_url %}
 		{#- OA-Method fork patch (framework#107): give the editor canvas the same stylesheet the
 		    published page gets, so what the client sees while editing IS what publishes. The SPA
