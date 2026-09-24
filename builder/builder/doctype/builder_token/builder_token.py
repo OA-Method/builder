@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import os
+import re
 import uuid
 
 import frappe
@@ -81,19 +82,38 @@ class BuilderToken(StandardFileSync, Document):
 		return pages
 
 
+#: OA-Method fork patch (framework#169). A label with a space or a quote would emit a
+#: broken declaration, so only a valid CSS identifier earns a readable alias.
+SAFE_TOKEN_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+
+
 @redis_cache(ttl=10 * 24 * 3600)
 def get_css_variables():
-	builder_tokens = frappe.get_all("Builder Token", fields=["name", "value", "dark_value"])
+	builder_tokens = frappe.get_all(
+		"Builder Token", fields=["name", "token_name", "value", "dark_value"]
+	)
 	css_variables = {}
 	dark_mode_css_variables = {}
 
 	for builder_token in builder_tokens:
 		if not builder_token.value:
 			continue
-		key = f"--{builder_token.name}"
-		css_variables[key] = builder_token.value
-		if builder_token.dark_value:
-			dark_mode_css_variables[key] = builder_token.dark_value
+		keys = [f"--{builder_token.name}"]
+		# OA-Method fork patch (framework#169): emit the READABLE name beside the UUID, so a
+		# rule can be written against a name that survives the token being re-created. Keying
+		# only off the record name forced every stylesheet through a `:root` alias onto a
+		# UUID, and a re-created token gets a fresh one — leaving the alias on a dead property
+		# while `var()` falls back to its frozen literal and the page still looks correct
+		# (bug-199/201/292). The editor also holds two copies of these values and only the
+		# inline one is reactive, so an alias read the stale `:root` copy until a reload.
+		label = builder_token.token_name
+		if label and label != builder_token.name and SAFE_TOKEN_NAME.match(label):
+			keys.append(f"--{label}")
+
+		for key in keys:
+			css_variables[key] = builder_token.value
+			if builder_token.dark_value:
+				dark_mode_css_variables[key] = builder_token.dark_value
 
 	return css_variables, dark_mode_css_variables
 

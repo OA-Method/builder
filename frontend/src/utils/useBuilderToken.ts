@@ -18,6 +18,26 @@ export const tokenType = (token: Partial<BuilderToken>): NonNullable<BuilderToke
 	return "Color";
 };
 
+// OA-Method fork patch (framework#169): emit the READABLE name beside the UUID.
+// These variables are bound inline on the canvas block and are reactive, whereas the
+// `:root` copy from /builder_assets/tokens.css is a <link> fetched once per page load and
+// never again. A rule written against the readable name therefore resolved the stale
+// `:root` copy while a block referencing var(--uuid) resolved the fresh inline one — same
+// token, two answers, decided purely by position in the tree.
+// Guarded: a label with a space or a quote would emit a broken declaration.
+const SAFE_TOKEN_NAME = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+const addReadableAlias = (
+	obj: Record<string, string>,
+	builderToken: BuilderToken,
+	value: string,
+) => {
+	const label = (builderToken as any).token_name;
+	if (label && label !== builderToken.name && SAFE_TOKEN_NAME.test(label)) {
+		obj[`--${label}`] = value;
+	}
+};
+
 let instance: ReturnType<typeof builderTokenComposable> | null = null;
 
 function builderTokenComposable() {
@@ -26,6 +46,7 @@ function builderTokenComposable() {
 			(obj: Record<string, string>, builderToken: BuilderToken) => {
 				if (!builderToken.name || !builderToken.value) return obj;
 				obj[`--${builderToken.name}`] = builderToken.value;
+				addReadableAlias(obj, builderToken, builderToken.value);
 				return obj;
 			},
 			{},
@@ -37,6 +58,7 @@ function builderTokenComposable() {
 			(obj: Record<string, string>, builderToken: BuilderToken) => {
 				if (!builderToken.name || !builderToken.dark_value) return obj;
 				obj[`--${builderToken.name}`] = builderToken.dark_value;
+				addReadableAlias(obj, builderToken, builderToken.dark_value);
 				return obj;
 			},
 			{},
