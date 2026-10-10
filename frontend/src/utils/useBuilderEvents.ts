@@ -9,7 +9,10 @@ import { BuilderPage } from "@/types/doctypes";
 import blockController from "@/utils/blockController";
 import getBlockTemplate from "@/utils/blockTemplate";
 
+import { commandShortcuts } from "@/components/Commands";
+import { __ } from "@/translation";
 import { copyBuilderBlocks, pasteBuilderBlocks } from "@/utils/builderBlockCopyPaste";
+import { promptOversizedSVG } from "@/utils/dialogs";
 import {
 	addPxToNumber,
 	getBlockCopy,
@@ -23,13 +26,10 @@ import {
 	uploadBuilderAsset,
 	uploadSVGAsFile,
 } from "@/utils/helpers";
-import { promptOversizedSVG } from "@/utils/dialogs";
 import { useEventListener } from "@vueuse/core";
-import { commandShortcuts } from "@/components/Commands";
 import { toast, useShortcut } from "frappe-ui";
 import { Ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { __ } from "@/translation";
 
 const builderStore = useBuilderStore();
 const canvasStore = useCanvasStore();
@@ -161,12 +161,7 @@ export function useBuilderEvents(
 					const fileURL = await resolveOversizedSVG(text);
 					if (fileURL) {
 						const imageBlock = getImageBlock(fileURL);
-						// the image template defaults to cover, which would crop the artwork
-						imageBlock.baseStyles = {
-							...block.baseStyles,
-							...imageBlock.baseStyles,
-							objectFit: "contain",
-						};
+						imageBlock.baseStyles = { ...block.baseStyles, ...imageBlock.baseStyles };
 						block = imageBlock;
 					}
 				}
@@ -250,7 +245,7 @@ export function useBuilderEvents(
 		{
 			key: "s",
 			ctrl: true,
-			description: __("Save page / component"),
+			description: __("Save Page / Component"),
 			group: __("General"),
 			allowInInput: true,
 			handler: (e) => {
@@ -262,7 +257,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "Backspace",
-			description: __("Delete selected blocks"),
+			description: __("Delete Selected Blocks"),
 			group: __("Edit"),
 			handler: (e) => {
 				if (builderStore.readOnlyMode) return;
@@ -276,7 +271,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "Delete",
-			description: __("Delete selected blocks"),
+			description: __("Delete Selected Blocks"),
 			group: __("Edit"),
 			handler: (e) => {
 				if (builderStore.readOnlyMode) return;
@@ -290,7 +285,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "Escape",
-			description: __("Exit current mode"),
+			description: __("Exit Current Mode"),
 			group: __("General"),
 			condition: () => canvasStore.editingMode !== "page",
 			handler: (e) => {
@@ -301,7 +296,7 @@ export function useBuilderEvents(
 		{
 			key: "0",
 			ctrl: true,
-			description: __("Reset canvas zoom"),
+			description: __("Reset Canvas Zoom"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -313,7 +308,7 @@ export function useBuilderEvents(
 			key: "0",
 			ctrl: true,
 			shift: true,
-			description: __("Fit canvas to screen"),
+			description: __("Fit Canvas to Screen"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -323,7 +318,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "ArrowRight",
-			description: __("Pan canvas right"),
+			description: __("Pan Canvas"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -334,7 +329,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "ArrowLeft",
-			description: __("Pan canvas left"),
+			description: __("Pan Canvas"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -345,7 +340,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "ArrowUp",
-			description: __("Pan canvas up"),
+			description: __("Pan Canvas"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -356,7 +351,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "ArrowDown",
-			description: __("Pan canvas down"),
+			description: __("Pan Canvas"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -368,7 +363,7 @@ export function useBuilderEvents(
 		{
 			key: "=",
 			ctrl: true,
-			description: __("Zoom in"),
+			description: __("Zoom In"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -379,7 +374,7 @@ export function useBuilderEvents(
 		{
 			key: "-",
 			ctrl: true,
-			description: __("Zoom out"),
+			description: __("Zoom Out"),
 			group: __("Canvas"),
 			handler: () => {
 				if (pageCanvas.value) {
@@ -389,7 +384,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "c",
-			description: __("Container mode"),
+			description: __("Container Mode"),
 			group: __("Tools"),
 			handler: () => {
 				if (builderStore.readOnlyMode) return;
@@ -398,7 +393,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "i",
-			description: __("Image mode"),
+			description: __("Image Mode"),
 			group: __("Tools"),
 			handler: () => {
 				if (builderStore.readOnlyMode) return;
@@ -407,7 +402,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "t",
-			description: __("Text mode"),
+			description: __("Text Mode"),
 			group: __("Tools"),
 			handler: () => {
 				if (builderStore.readOnlyMode) return;
@@ -416,7 +411,7 @@ export function useBuilderEvents(
 		},
 		{
 			key: "v",
-			description: __("Select mode"),
+			description: __("Select Mode"),
 			group: __("Tools"),
 			handler: () => {
 				builderStore.mode = "select";
@@ -424,24 +419,10 @@ export function useBuilderEvents(
 		},
 		{
 			key: "h",
-			description: __("Move / hand mode"),
+			description: __("Move / Hand Mode"),
 			group: __("Tools"),
 			handler: () => {
 				builderStore.mode = "move";
-			},
-		},
-		{
-			key: "l",
-			ctrl: true,
-			shift: true,
-			triggeredOn: "hold",
-			description: __("Highlight Blocks with Client Scripts"),
-			group: __("View"),
-			onHold: () => {
-				builderStore.highlightBlocksWithClientScripts = true;
-			},
-			onRelease: () => {
-				builderStore.highlightBlocksWithClientScripts = false;
 			},
 		},
 	]);
