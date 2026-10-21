@@ -10,11 +10,13 @@
 	<body class="overscroll-none bg-surface-base no-scrollbar selection:bg-gray-500/30" style="scrollbar-width: auto;">
 		<div id="app"></div>
 		<div id="popovers"></div>
+		<script type="application/json" id="editor-demo">{% if editor_demo %}{{ editor_demo | tojson }}{% endif %}</script>
 
 		<script>
 			window.csrf_token = "{{ csrf_token }}";
 			window.builder_path = "{{ builder_path }}";
 			window.site_name = "{{ site_name }}";
+			window.socketio_port = "{{ socketio_port or '' }}";
 			window.builder_version = "{{ builder_version }}";
 			window.is_fc_site = "{{ is_fc_site }}";
 			window.is_developer_mode = "{{ is_developer_mode }}";

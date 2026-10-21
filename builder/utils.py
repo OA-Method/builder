@@ -293,6 +293,8 @@ def get_safer_globals():
 		as_json=frappe.as_json,
 		dict=safe_globals["dict"],
 		args=form_dict,
+		# must stay top-level: safe_exec's _getattr_ guard rejects `frappe._`
+		_=frappe._,
 		frappe=NamespaceDict(
 			db=NamespaceDict(
 				count=frappe.db.count,
@@ -643,6 +645,9 @@ def add_composite_index_to_web_page_view():
 	Add a composite index to the Web Page View table.
 	This is used to speed up queries that filter by creation, is_unique, and path.
 	"""
+	# newer Frappe keeps Web Page View in the SQLite log database, so there is no table to index
+	if frappe.get_meta("Web Page View").is_virtual:
+		return
 	frappe.db.add_index("Web Page View", ["creation", "is_unique", "path"])
 
 

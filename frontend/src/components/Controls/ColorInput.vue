@@ -4,7 +4,7 @@
 			ref="colorPickerRef"
 			:placement="placement"
 			:offset="popoverOffset"
-			@open="events.onFocus"
+			@open="handleOpen"
 			@close="handleClose"
 			:modelValue="resolvedColor"
 			@update:modelValue="
@@ -45,7 +45,7 @@
 								<template #prefix>
 									<button
 										type="button"
-										class="size-4 cursor-pointer rounded shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-4"
+										class="size-4 cursor-pointer rounded-4 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-gray-4"
 										:aria-label="__('Open color picker')"
 										@click="togglePopover"
 										:style="{
@@ -160,7 +160,7 @@ const isValidColorInput = (val: string | null) => {
 
 const props = withDefaults(
 	defineProps<{
-		modelValue?: HashString | null;
+		modelValue?: string | null;
 		label?: string;
 		placeholder?: string;
 		placement?: "top" | "bottom" | "left" | "right";
@@ -222,6 +222,12 @@ const displayPlaceholder = computed(() => {
 });
 
 const emit = defineEmits(["update:modelValue"]);
+
+const handleOpen = () => {
+	if (typeof events.onFocus === "function") {
+		events.onFocus();
+	}
+};
 
 const handleClose = () => {
 	if (colorInput.value && typeof colorInput.value.blur === "function") {

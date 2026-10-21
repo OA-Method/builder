@@ -1,16 +1,39 @@
+from unittest.mock import patch
+
 from frappe.tests.utils import FrappeTestCase
 
 from builder.ai.llm import (
+	GENERIC_FAILURE,
+	NO_KEY,
 	is_retryable,
 	loads_tolerant,
 	patch_messages_for_provider,
 	patch_params_for_provider,
 	provider_kwargs,
 	provider_overrides,
+	resolve_api_key,
+	route,
+	user_facing_error,
 )
+from builder.ai.models import ModelRegistry
 
 CLAUDE = "openrouter/anthropic/claude-sonnet-5"
 GPT = "openrouter/openai/gpt-5.6-luna"
+SHARED_KEY = "sk-or-shared"
+OPENROUTER_MODEL = {
+	"name": CLAUDE,
+	"provider": "OpenRouter",
+	"route_prefix": "openrouter",
+	"litellm_provider": "openrouter",
+	"api_base": None,
+}
+GATEWAY_MODEL = {
+	"name": "gateway/llama-4",
+	"provider": "Gateway",
+	"route_prefix": "gateway",
+	"litellm_provider": "openai",
+	"api_base": "https://gateway.example.com/v1",
+}
 
 
 class RateLimitError(Exception):
@@ -29,6 +52,45 @@ class TestRetryable(FrappeTestCase):
 
 	def test_a_value_error_is_not(self):
 		self.assertFalse(is_retryable(ValueError("bad args")))
+
+
+class AuthenticationError(Exception):
+	pass
+
+
+class TestUserFacingError(FrappeTestCase):
+	def test_a_rejected_key_says_where_to_fix_it(self):
+		message = user_facing_error(AuthenticationError("Missing Authentication header sk-or-secret"))
+
+		self.assertIn("API key", message)
+		self.assertNotIn("sk-or-secret", message)
+
+	def test_a_subclass_maps_like_its_parent(self):
+		class ProviderAuthError(AuthenticationError):
+			pass
+
+		self.assertIn("API key", user_facing_error(ProviderAuthError()))
+
+	def test_a_chatgpt_sign_in_problem_asks_to_sign_in_again(self):
+		from builder.ai.codex import CodexCredentialError, CodexError
+
+		self.assertIn("Sign in with ChatGPT", user_facing_error(CodexCredentialError("expired")))
+		self.assertEqual(user_facing_error(CodexError("stream failed")), GENERIC_FAILURE)
+
+	def test_a_payment_failure_says_so(self):
+		class APIError(Exception):
+			status_code = 402
+
+		self.assertIn("out of credit", user_facing_error(APIError("check your payment status")))
+
+	def test_an_unavailable_model_points_at_the_picker(self):
+		class ServiceUnavailableError(Exception):
+			pass
+
+		self.assertIn("/model", user_facing_error(ServiceUnavailableError("model unavailable")))
+
+	def test_anything_else_stays_generic(self):
+		self.assertEqual(user_facing_error(ValueError("internal detail")), GENERIC_FAILURE)
 
 
 class TestLoadsTolerant(FrappeTestCase):
@@ -108,3 +170,17 @@ class TestProviderTuning(FrappeTestCase):
 
 	def test_omits_an_api_base_that_is_not_set(self):
 		self.assertEqual(provider_overrides({}), {})
+
+
+class TestSharedKey(FrappeTestCase):
+	def test_only_openrouter_borrows_the_shared_key(self):
+		proxied = {**OPENROUTER_MODEL, "api_base": "https://proxy.example.com/v1"}
+		for info, expected in ((OPENROUTER_MODEL, SHARED_KEY), (GATEWAY_MODEL, NO_KEY), (proxied, NO_KEY)):
+			with (
+				self.subTest(model=info["name"], api_base=info["api_base"]),
+				patch.object(ModelRegistry, "find", return_value=info),
+				patch("builder.ai.llm.provider_api_key", return_value=None),
+				patch("builder.ai.llm.settings_api_key", return_value=SHARED_KEY),
+			):
+				self.assertEqual(route(info["name"], SHARED_KEY)[2], expected)
+				self.assertEqual(resolve_api_key(info["name"]), expected)
