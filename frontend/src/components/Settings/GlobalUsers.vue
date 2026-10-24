@@ -5,7 +5,7 @@
 				type="text"
 				class="w-72"
 				:placeholder="__('Search by name or email')"
-				icon-left="search"
+				icon-left="lucide-search"
 				:modelValue="searchQuery"
 				@input="(val: string) => (searchQuery = val)" />
 			<Button variant="solid" icon-left="lucide-plus" @click="openInviteDialog">{{ __("Invite") }}</Button>
@@ -26,7 +26,11 @@
 							<span class="truncate text-p-sm text-ink-gray-8">{{ invite.email }}</span>
 							<UseTimeAgo v-slot="{ timeAgo }" :time="invite.creation">
 								<span class="truncate text-p-xs text-ink-gray-5">
-									{{ invite.invited_by_name ? __("Invited {0} by {1}", [timeAgo, invite.invited_by_name]) : __("Invited {0}", [timeAgo]) }}
+									{{
+										invite.invited_by_name
+											? __("Invited {0} by {1}", [timeAgo, invite.invited_by_name])
+											: __("Invited {0}", [timeAgo])
+									}}
 								</span>
 							</UseTimeAgo>
 						</div>
@@ -76,7 +80,7 @@
 			:actions="[{ label: __('Send Invitation'), variant: 'solid', onClick: sendInvites }]">
 			<template #default>
 				<BuilderInput
-					:ref="(el) => (inviteInputRef = el)"
+					:ref="(el: unknown) => (inviteInputRef = el)"
 					type="textarea"
 					:label="__('Email addresses')"
 					placeholder="jane@example.com, john@example.com"
